@@ -1,14 +1,19 @@
 # Deployment
 
-This is a **static** site (Astro `output: 'static'`). The production build is a
-plain `dist/` folder of HTML/CSS/JS — no server, no database, no environment
-variables. Any static host works; the free tiers of **Netlify** and
-**Cloudflare Pages** are both a good fit and give automatic deploys on every
-`git push`.
+The site is a **static** Astro build (`output: 'static'`) plus **one serverless
+function** — `netlify/functions/tournaments.mts` — that stores tournaments in
+**Netlify Blobs**. Everything else (local runs, battle tools, rules) is pure
+client-side and needs no server.
 
-All app state (teams, graveyard, rule clauses) lives in the visitor's browser
-`localStorage`. Participants sync between devices with the **Export / Import
-Save** buttons, not a shared backend.
+- `dist/` — static HTML/CSS/JS, servable anywhere.
+- `/api/tournaments` — the function. Auto-deployed by Netlify from
+  `netlify/functions/`. Netlify Blobs is **auto-provisioned on deploy** — nothing
+  to configure, no database, no keys.
+
+> **Netlify is the recommended host** because the tournaments feature uses
+> Netlify Blobs. On a host without that function the app still runs fully — it
+> just falls back to **local runs only** (per-device `localStorage` + JSON
+> export/import).
 
 ---
 
@@ -16,93 +21,83 @@ Save** buttons, not a shared backend.
 
 ```bash
 npm install
-npm run build      # outputs dist/
-npm run preview    # serves dist/ at http://localhost:4321 to verify
-```
+npm run build      # -> dist/  (exit 0, no warnings)
+npm run check      # astro check + tsc --noEmit
+npm run preview    # serve the static build
 
-`npm run build` must finish with exit code 0 and no warnings. `npm run check`
-(`astro check` + `tsc --noEmit`) type-checks the project.
+# Optional: exercise the /api function + a local Blobs sandbox
+npm run build && npx netlify dev
+```
 
 Requires **Node 22.12+** (pinned in `.nvmrc` and `netlify.toml`).
 
 ---
 
-## 2. Push the repository to GitHub
-
-From the project root:
+## 2. Push to GitHub
 
 ```bash
-git init
 git add .
-git commit -m "Initial commit: Pokémon Z Nuzlocke tracker"
-git branch -M main
-
-# Create an empty repo on github.com first (no README/licence), then:
-git remote add origin https://github.com/<your-user>/<your-repo>.git
-git push -u origin main
+git commit -m "…"
+git push               # first time: git push -u origin main
 ```
 
-`dist/` and `node_modules/` are already in `.gitignore` — don't commit them.
+`dist/`, `node_modules/`, and `.netlify/` are in `.gitignore`.
 
 ---
 
-## 3a. Deploy on Netlify
+## 3. Deploy on Netlify (auto-deploy on push)
 
-1. Sign in at <https://app.netlify.com> with GitHub.
-2. **Add new site → Import an existing project → GitHub**, then pick the repo.
-3. Netlify reads [`netlify.toml`](./netlify.toml), so the fields are pre-filled:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `dist`
-   - **Node version:** `22` (via `NODE_VERSION`)
-4. Click **Deploy**. First build takes ~1 minute.
-5. Every push to `main` now redeploys automatically. Pull requests get their own
-   preview URL.
-6. (Optional) **Site configuration → Change site name** to get a tidy
-   `https://<name>.netlify.app`, or add a custom domain under **Domain
-   management**.
+1. <https://app.netlify.com> → sign in with GitHub.
+2. **Add new site → Import an existing project → GitHub** → pick the repo.
+3. [`netlify.toml`](./netlify.toml) pre-fills everything:
+   - Build command `npm run build`, publish dir `dist`, functions dir
+     `netlify/functions`, Node `22`.
+4. **Deploy.** Every push to `main` redeploys; PRs get preview URLs.
+5. (Optional) **Site configuration → Change site name** for a tidy
+   `https://<name>.netlify.app`, or add a custom domain.
 
-## 3b. Deploy on Cloudflare Pages
+### Optional: lock down editing with a passphrase
 
-1. Sign in at <https://dash.cloudflare.com> → **Workers & Pages → Create →
-   Pages → Connect to Git**.
-2. Authorise GitHub and select the repo.
-3. Build settings:
-   | Setting | Value |
-   | --- | --- |
-   | Framework preset | `Astro` (or *None*) |
-   | Build command | `npm run build` |
-   | Build output directory | `dist` |
-   | Environment variable | `NODE_VERSION` = `22` |
-4. **Save and Deploy.** Subsequent pushes to `main` redeploy automatically;
-   other branches get preview deployments.
-5. The site is live at `https://<project>.pages.dev`. Add a custom domain under
-   the project's **Custom domains** tab if you want one.
+By default **anyone with the site URL can create and edit tournaments**. To
+require a shared passphrase for writes (viewing stays open):
 
-> Use **one** of the two providers. Both configs can coexist in the repo
-> harmlessly — Cloudflare Pages ignores `netlify.toml` and vice versa.
+1. Netlify → **Site configuration → Environment variables → Add a variable**.
+2. Key `NUZLOCKE_EDIT_PASSPHRASE`, value = your chosen passphrase.
+3. **Trigger a redeploy** (env changes need a new build).
+4. Share the passphrase with participants. In the app: **Tournaments →
+   Edit passphrase → Save** (stored only in their browser). A stuck save shows
+   *"Passphrase required"* until it's set.
+
+To change or remove it, edit/delete the variable and redeploy.
+
+### Cloudflare Pages
+
+Cloudflare Pages can host the **static app** (Build command `npm run build`,
+output `dist`, env `NODE_VERSION=22`), but **not** the tournaments function —
+Netlify Blobs is Netlify-only. There it runs in local-run-only mode. Porting the
+function to a Cloudflare Pages Function + KV/D1 would be needed for tournaments.
 
 ---
 
-## 4. Using the live site (for participants)
+## 4. For participants
 
-1. Open the public URL (the `*.netlify.app` / `*.pages.dev` link, or the custom
-   domain) in any modern browser — desktop or mobile. Nothing to install.
-2. Track your run on **Overview**: register encounters, mark Pokémon as fallen,
-   check the graveyard. Everything saves to that browser automatically.
-3. The battle tools (**Type Chart**, **Damage Calculator**) and **Reglas**
-   work offline once the page has loaded.
+Open the public URL in any browser — nothing to install.
 
-### Sharing / moving your save
+**Local run** (default): tracked in that browser only. Good for a quick solo game
+or offline. Move it between devices with **Overview → Export Save /
+Import Save** (`nuzlocke_backup.json`).
 
-Because each browser keeps its own data, use the JSON file to move or share a
-run:
+**Tournaments** (shared, permanent):
 
-- **Export:** Overview → **Export Save** → downloads `nuzlocke_backup.json`.
-- **Import:** on the other device/browser, Overview → **Import Save** → pick the
-  file → confirm. It validates the file against the save schema and replaces the
-  local teams and graveyard, showing a confirmation toast.
-- Send the `.json` file to another participant (chat, email, shared drive) and
-  they import it the same way to see your exact team and graveyard state.
+1. **Tournaments** in the nav → **New tournament** → name it → *Create & open*.
+   Tick *"Start from my current local run"* to carry over what you already have.
+2. Play on **Overview** as usual. Changes autosave to the server (the *Saved* /
+   *Saving…* pill on the run bar shows status); they're also cached locally, so
+   an offline patch syncs when you reconnect (*Retry* on the pill).
+3. On another device, open the same site → **Tournaments** → **Open** the same
+   tournament. Same players, same graveyard.
+4. Switch between the local run and any tournament from the **Run** dropdown at
+   the top of Overview.
 
-Keep a fresh export as a backup before importing — importing overwrites whatever
-is currently in that browser.
+Editing the same tournament from two devices at once = last save wins, so
+coordinate, or give each player their own player-card within one tournament.

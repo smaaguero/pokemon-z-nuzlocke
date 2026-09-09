@@ -1,0 +1,24 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import TournamentsManager from "../components/tournaments/TournamentsManager.tsx";
+---
+
+<BaseLayout
+  title="Tournaments — Pokémon Z Nuzlocke Tracker"
+  description="Create and open permanently stored tournaments shared across devices."
+>
+  <section class="space-y-3">
+    <p class="text-sm font-medium text-emerald-400">Saved runs</p>
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+      Tournaments
+    </h1>
+    <p class="max-w-2xl text-sm leading-relaxed text-zinc-400">
+      A tournament stores its players and their Pokémon on the server, so the
+      same run is available on every device and comes back next time. The
+      <strong class="text-zinc-300">local run</strong> stays on this device only —
+      use it for a quick solo game or offline.
+    </p>
+  </section>
+
+  <TournamentsManager client:load />
+</BaseLayout>

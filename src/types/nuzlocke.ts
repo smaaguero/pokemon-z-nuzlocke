@@ -27,3 +27,24 @@ export interface PokemonEntry {
     timestamp: string;
   };
 }
+
+// --- App-level: server-persisted tournaments (beyond SDD 5.1) ---
+// A tournament is a named, permanently stored container of PlayerRun records,
+// shared across devices via the /api/tournaments function + Netlify Blobs.
+
+export interface Tournament {
+  id: string;
+  name: string;
+  players: PlayerRun[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentSummary {
+  id: string;
+  name: string;
+  playerCount: number;
+  pokemonCount: number;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -7,6 +7,7 @@ import PlayerCard from "./PlayerCard";
 import GraveyardSection from "./GraveyardSection";
 import EncounterDrawer from "./EncounterDrawer";
 import FallenDialog from "./FallenDialog";
+import ScopeBar from "./ScopeBar";
 
 type Toast = { kind: "success" | "error"; msg: string };
 
@@ -26,6 +27,18 @@ export default function Dashboard() {
     return () => window.clearTimeout(t);
   }, [toast]);
 
+  const scopeBar = (
+    <ScopeBar
+      scope={state.scope}
+      tournaments={state.tournaments}
+      sync={state.sync}
+      online={state.online}
+      onOpenTournament={(id) => void state.openTournament(id)}
+      onUseLocal={state.useLocalRun}
+      onRetry={state.retrySync}
+    />
+  );
+
   if (!state.hydrated) {
     return (
       <div className="mt-8 rounded-xl border border-white/10 bg-zinc-900/60 p-6 text-sm text-zinc-400">
@@ -35,6 +48,25 @@ export default function Dashboard() {
   }
 
   const player = state.activePlayer;
+
+  if (!player) {
+    return (
+      <div className="mt-8 space-y-6">
+        {scopeBar}
+        <div className="rounded-xl border border-white/10 bg-zinc-900/60 p-6 text-sm text-zinc-400">
+          <p>This run has no players yet.</p>
+          <button
+            onClick={() => state.addPlayer("Player 1")}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-emerald-400"
+          >
+            <UserPlus className="size-4" />
+            Add a player
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const partyFull = player.party.length >= state.maxParty;
 
   const openAdd = () => setDrawer({ open: true, entry: null });
@@ -98,6 +130,8 @@ export default function Dashboard() {
 
   return (
     <div className="mt-8 space-y-6">
+      {scopeBar}
+
       <div className="flex flex-wrap items-center gap-2">
         {state.players.map((p) => (
           <button
