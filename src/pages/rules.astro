@@ -1,0 +1,74 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RulesClauses from "../components/rules/RulesClauses.tsx";
+
+const reglas = [
+  {
+    n: 1,
+    titulo: "Primer encuentro",
+    texto:
+      "Solo se puede capturar el primer Pokémon encontrado en cada ruta o área. Si huye o se debilita antes de atraparlo, se pierde la captura de esa zona.",
+  },
+  {
+    n: 2,
+    titulo: "Muerte permanente",
+    texto:
+      "Si un Pokémon se debilita (sus PS llegan a 0), se considera muerto de forma permanente y debe ser liberado o guardado en el cementerio.",
+  },
+  {
+    n: 3,
+    titulo: "Mote obligatorio",
+    texto:
+      "Se debe poner un mote a todos los Pokémon capturados para crear un vínculo afectivo. Tu Pokémon inicial debe llevar el nombre de un proyecto de la AEAT.",
+  },
+];
+---
+
+<BaseLayout
+  title="Reglas — Rastreador Nuzlocke de Pokémon Z"
+  description="Reglas base y cláusulas opcionales del reto Nuzlocke para Pokémon Z."
+>
+  <section class="space-y-3">
+    <p class="text-sm font-medium text-emerald-400">Referencia</p>
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+      Reglas del Nuzlocke
+    </h1>
+    <p class="max-w-2xl text-sm leading-relaxed text-zinc-400">
+      Estas son las reglas base activas para esta partida de Pokémon&nbsp;Z. Su
+      cumplimiento es obligatorio durante toda la aventura. Más abajo puedes
+      configurar las cláusulas opcionales que uséis entre los participantes.
+    </p>
+  </section>
+
+  <section class="mt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+      Reglas obligatorias
+    </h2>
+    <ol class="mt-4 space-y-3">
+      {
+        reglas.map((regla) => (
+          <li class="rounded-xl border border-white/10 bg-zinc-900/50 p-4">
+            <div class="flex items-start gap-3">
+              <span class="grid size-7 shrink-0 place-items-center rounded-md border border-white/10 bg-zinc-800 text-sm font-bold text-emerald-400">
+                {regla.n}
+              </span>
+              <div>
+                <h3 class="font-semibold text-zinc-100">
+                  Regla {regla.n}: {regla.titulo}
+                </h3>
+                <p class="mt-1 text-sm leading-relaxed text-zinc-400">{regla.texto}</p>
+              </div>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section class="mt-10">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-400">
+      Cláusulas opcionales
+    </h2>
+    <RulesClauses client:load />
+  </section>
+</BaseLayout>

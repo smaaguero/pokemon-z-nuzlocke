@@ -1,0 +1,23 @@
+# Netlify deployment — static Astro output, no serverless functions.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Astro 7 / package.json engines require Node >= 22.12.
+  NODE_VERSION = "22"
+
+# Content-hashed assets never change — cache them for a year.
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Fallback for unknown paths. Real pages and assets are served first (Netlify
+# matches static files before redirects), so this only catches typos/deep links
+# and keeps the app usable instead of showing a bare 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

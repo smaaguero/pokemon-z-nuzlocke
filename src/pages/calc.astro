@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import DamageCalculator from "../components/battle/DamageCalculator.tsx";
+---
+
+<BaseLayout title="Damage Calculator — Pokémon Z Nuzlocke Tracker">
+  <section class="space-y-3">
+    <p class="text-sm font-medium text-emerald-400">Battle Utility</p>
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+      Damage Calculator
+    </h1>
+    <p class="max-w-2xl text-sm leading-relaxed text-zinc-400">
+      Enter raw stat values, a move, and battle conditions to get the min–max
+      damage roll, percentage of the defender's HP, and a knockout estimate.
+    </p>
+  </section>
+
+  <DamageCalculator client:load />
+</BaseLayout>

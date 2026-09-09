@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Dashboard from "../components/dashboard/Dashboard.tsx";
+---
+
+<BaseLayout title="Overview — Pokémon Z Nuzlocke Tracker">
+  <section class="space-y-3">
+    <p class="text-sm font-medium text-emerald-400">Overview</p>
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+      Teams &amp; Graveyard
+    </h1>
+    <p class="max-w-2xl text-sm leading-relaxed text-zinc-400">
+      Live view of each participant's active party and the memorial wall of
+      fallen Pokémon. Everything is saved to your browser's local storage and
+      survives a refresh.
+    </p>
+  </section>
+
+  <Dashboard client:load />
+</BaseLayout>

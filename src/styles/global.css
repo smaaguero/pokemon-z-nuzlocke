@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+/*
+  Pokémon Z Nuzlocke Tracker — theme foundation
+  Modern dark aesthetic: zinc/slate baseline, subtle borders, Inter typography.
+*/
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Surface + border palette (slate/zinc leaning) */
+  --color-surface: var(--color-zinc-950);
+  --color-surface-raised: var(--color-zinc-900);
+  --color-surface-overlay: var(--color-zinc-800);
+  --color-hairline: color-mix(in oklab, var(--color-zinc-100) 10%, transparent);
+
+  /* Accent used for interactive/nav highlights */
+  --color-accent: var(--color-emerald-400);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-surface);
+  color: var(--color-zinc-200);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: var(--color-surface);
+}
+
+/* Sensible defaults for long-form text blocks (rules page, etc.) */
+a {
+  color: inherit;
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
