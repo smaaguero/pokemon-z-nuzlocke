@@ -123,12 +123,13 @@ export default function RulesClauses() {
                 aria-checked={on}
                 aria-label={`${on ? "Desactivar" : "Activar"} ${c.name}`}
                 onClick={() => toggle(c.id)}
-                className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors ${
+                className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
                   on ? "bg-emerald-500" : "bg-zinc-700"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block size-5 rounded-full bg-white transition-transform ${
                     on ? "translate-x-[1.375rem]" : "translate-x-0.5"
                   }`}
                 />
