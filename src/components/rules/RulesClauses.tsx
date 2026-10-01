@@ -21,12 +21,37 @@ const CLAUSES = [
     tag: "Level Cap",
     desc: "El equipo no puede superar el nivel del Pokémon más fuerte del siguiente Líder de Gimnasio.",
   },
+  {
+    id: "battleitems",
+    name: "Objetos en Combate",
+    tag: "Battle Item Clause",
+    desc: "No se pueden usar objetos para curar o reanimar Pokémon durante los combates, especialmente contra Líderes de Gimnasio y el Alto Mando.",
+  },
+  {
+    id: "legendary",
+    name: "Cláusula de Legendarios",
+    tag: "Legendary Clause",
+    desc: "Los Pokémon legendarios no cuentan como encuentro válido y no pueden capturarse en ningún momento del reto.",
+  },
+  {
+    id: "breeding",
+    name: "Cláusula de Cría",
+    tag: "Breeding Clause",
+    desc: "No se permite criar Pokémon (breeding) para fabricar naturalezas o IVs perfectos; el equipo se queda con lo que dé el randomizador.",
+  },
 ] as const;
 
 type ClauseId = (typeof CLAUSES)[number]["id"];
 type ClauseState = Record<ClauseId, boolean>;
 
-const DEFAULT_STATE: ClauseState = { dupes: false, shiny: false, levelcap: false };
+const DEFAULT_STATE: ClauseState = {
+  dupes: false,
+  shiny: false,
+  levelcap: false,
+  battleitems: false,
+  legendary: false,
+  breeding: false,
+};
 
 function loadState(): ClauseState {
   try {
@@ -37,6 +62,9 @@ function loadState(): ClauseState {
       dupes: parsed.dupes === true,
       shiny: parsed.shiny === true,
       levelcap: parsed.levelcap === true,
+      battleitems: parsed.battleitems === true,
+      legendary: parsed.legendary === true,
+      breeding: parsed.breeding === true,
     };
   } catch {
     return DEFAULT_STATE;

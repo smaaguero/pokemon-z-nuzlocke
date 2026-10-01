@@ -8,6 +8,11 @@ const reglas = [
     titulo: "Primer encuentro",
     texto:
       "Solo se puede capturar el primer Pokémon encontrado en cada ruta o área. Si huye o se debilita antes de atraparlo, se pierde la captura de esa zona.",
+    notas: [
+      "Cada ruta, ciudad o sección claramente diferenciada de una cueva o edificio grande cuenta como una zona independiente.",
+      "Los Pokémon regalados o de encuentro estático (fósiles, guardianes, eventos) cuentan como el encuentro de esa zona: no se pueden rechazar para buscar otro.",
+      "Los huevos cuentan como el encuentro del momento en que se reciben, no cuando eclosionan, y deben recibir mote antes de eclosionar.",
+    ],
   },
   {
     n: 2,
@@ -20,6 +25,18 @@ const reglas = [
     titulo: "Mote obligatorio",
     texto:
       "Se debe poner un mote a todos los Pokémon capturados para crear un vínculo afectivo. Tu Pokémon inicial debe llevar el nombre de un proyecto de la AEAT.",
+  },
+  {
+    n: 4,
+    titulo: "Evoluciones por intercambio",
+    texto:
+      "Los Pokémon que evolucionan por intercambio (Kadabra, Machoke, Haunter, Graveler, etc.) evolucionan por nivel en su lugar, ya que el intercambio no está disponible en una partida en solitario.",
+  },
+  {
+    n: 5,
+    titulo: "Sin intercambios entre participantes",
+    texto:
+      "No se permite intercambiar Pokémon entre las partidas de distintos jugadores del torneo. Cada partida debe mantenerse independiente de principio a fin.",
   },
 ];
 ---
@@ -57,6 +74,13 @@ const reglas = [
                   Regla {regla.n}: {regla.titulo}
                 </h3>
                 <p class="mt-1 text-sm leading-relaxed text-zinc-400">{regla.texto}</p>
+                {regla.notas && (
+                  <ul class="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-zinc-500">
+                    {regla.notas.map((nota) => (
+                      <li>{nota}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </li>
