@@ -2,6 +2,75 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { POKEMON_TYPES, type PokemonType } from "../../data/pokemon-types";
 import { computeDamage, type Weather } from "../../lib/damage";
+import { useNuzlockeState } from "../../hooks/useNuzlockeState";
+import type { PlayerRun, PokemonEntry } from "../../types/nuzlocke";
+
+const VALID_TYPES = new Set<string>(POKEMON_TYPES);
+function ownTypesOf(entry: PokemonEntry): PokemonType[] {
+  return entry.types.filter((t): t is PokemonType => VALID_TYPES.has(t));
+}
+
+/** `${playerId}:${entryId}` -> the matching roster entry, searching party + graveyard. */
+function findRosterEntry(
+  players: PlayerRun[],
+  value: string,
+): { entry: PokemonEntry; playerName: string } | null {
+  const sep = value.indexOf(":");
+  if (sep < 0) return null;
+  const playerId = value.slice(0, sep);
+  const entryId = value.slice(sep + 1);
+  const player = players.find((p) => p.playerId === playerId);
+  if (!player) return null;
+  const entry = [...player.party, ...player.graveyard].find((e) => e.id === entryId);
+  return entry ? { entry, playerName: player.playerName } : null;
+}
+
+function RosterPicker({
+  players,
+  value,
+  onChange,
+  fills,
+}: {
+  players: PlayerRun[];
+  value: string;
+  onChange: (value: string) => void;
+  fills: string;
+}) {
+  const hasAny = players.some((p) => p.party.length > 0 || p.graveyard.length > 0);
+  return (
+    <Field label="Load from roster" hint="optional">
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+        <option value="">— Manual stats —</option>
+        {hasAny ? (
+          players.map((p) =>
+            p.party.length === 0 && p.graveyard.length === 0 ? null : (
+              <optgroup key={p.playerId} label={p.playerName}>
+                {p.party.map((entry) => (
+                  <option key={`party:${entry.id}`} value={`${p.playerId}:${entry.id}`}>
+                    {entry.nickname || entry.species} ({entry.species}) · Lv. {entry.level}
+                  </option>
+                ))}
+                {p.graveyard.map((entry) => (
+                  <option key={`grave:${entry.id}`} value={`${p.playerId}:${entry.id}`}>
+                    ☠ {entry.nickname || entry.species} ({entry.species}) · Lv.{" "}
+                    {entry.deathDetails?.levelAtDeath ?? entry.level} (fainted)
+                  </option>
+                ))}
+              </optgroup>
+            ),
+          )
+        ) : (
+          <option value="" disabled>
+            No Pokémon tracked yet — register one on Overview
+          </option>
+        )}
+      </select>
+      <p className="mt-1 text-[11px] text-zinc-600">
+        Fills {fills} — this app doesn't track base stats, so enter those below.
+      </p>
+    </Field>
+  );
+}
 
 const inputCls =
   "w-full rounded-md border border-white/15 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-emerald-500/50";
@@ -47,6 +116,8 @@ function StageSelect({ value, onChange }: { value: string; onChange: (v: string)
 }
 
 export default function DamageCalculator() {
+  const nz = useNuzlockeState();
+
   // Attacker
   const [level, setLevel] = useState("50");
   const [atkStat, setAtkStat] = useState("120");
@@ -54,6 +125,8 @@ export default function DamageCalculator() {
   const [moveType, setMoveType] = useState<PokemonType>("Normal");
   const [atkStage, setAtkStage] = useState("0");
   const [stab, setStab] = useState(false);
+  const [attackerPick, setAttackerPick] = useState("");
+  const [attackerOwnTypes, setAttackerOwnTypes] = useState<PokemonType[] | null>(null);
 
   // Defender
   const [defStat, setDefStat] = useState("100");
@@ -61,10 +134,33 @@ export default function DamageCalculator() {
   const [defType2, setDefType2] = useState<PokemonType | "">("");
   const [maxHp, setMaxHp] = useState("180");
   const [defStage, setDefStage] = useState("0");
+  const [defenderPick, setDefenderPick] = useState("");
 
   // Modifiers
   const [weather, setWeather] = useState<Weather>("Neutral");
   const [crit, setCrit] = useState(false);
+
+  const pickAttacker = (value: string) => {
+    setAttackerPick(value);
+    const found = value ? findRosterEntry(nz.players, value) : null;
+    if (!found) {
+      setAttackerOwnTypes(null);
+      return;
+    }
+    setLevel(String(found.entry.level));
+    const types = ownTypesOf(found.entry);
+    setAttackerOwnTypes(types);
+    if (types[0]) setMoveType(types[0]);
+  };
+
+  const pickDefender = (value: string) => {
+    setDefenderPick(value);
+    const found = value ? findRosterEntry(nz.players, value) : null;
+    if (!found) return;
+    const types = ownTypesOf(found.entry);
+    if (types[0]) setDefType1(types[0]);
+    setDefType2(types[1] ?? "");
+  };
 
   const H = clampInt(maxHp, 1, 999999, 1);
   const r = useMemo(
@@ -108,6 +204,14 @@ export default function DamageCalculator() {
       <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4 sm:p-6">
         <h2 className="text-sm font-semibold text-zinc-100">Attacker</h2>
         <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <RosterPicker
+              players={nz.players}
+              value={attackerPick}
+              onChange={pickAttacker}
+              fills="level & move type"
+            />
+          </div>
           <Field label="Level">
             <input type="number" min={1} max={100} value={level} onChange={(e) => setLevel(e.target.value)} className={inputCls} />
           </Field>
@@ -125,6 +229,11 @@ export default function DamageCalculator() {
                 </option>
               ))}
             </select>
+            {attackerOwnTypes && attackerOwnTypes.includes(moveType) && (
+              <p className="mt-1 text-[11px] text-emerald-400">
+                Matches your Pokémon's type — STAB likely applies.
+              </p>
+            )}
           </Field>
           <Field label="Attacker stat stage" hint="−6 to +6">
             <StageSelect value={atkStage} onChange={setAtkStage} />
@@ -140,6 +249,14 @@ export default function DamageCalculator() {
       <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4 sm:p-6">
         <h2 className="text-sm font-semibold text-zinc-100">Defender</h2>
         <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <RosterPicker
+              players={nz.players}
+              value={defenderPick}
+              onChange={pickDefender}
+              fills="type 1 & type 2"
+            />
+          </div>
           <Field label="Def / Sp. Def" hint="stat value">
             <input type="number" min={1} value={defStat} onChange={(e) => setDefStat(e.target.value)} className={inputCls} />
           </Field>

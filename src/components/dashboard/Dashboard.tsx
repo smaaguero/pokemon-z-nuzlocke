@@ -4,6 +4,7 @@ import { useNuzlockeState } from "../../hooks/useNuzlockeState";
 import type { NewPokemonInput, PokemonPatch } from "../../hooks/useNuzlockeState";
 import type { PokemonEntry } from "../../types/nuzlocke";
 import PlayerCard from "./PlayerCard";
+import TeamCoverage from "./TeamCoverage";
 import GraveyardSection from "./GraveyardSection";
 import EncounterDrawer from "./EncounterDrawer";
 import FallenDialog from "./FallenDialog";
@@ -204,6 +205,8 @@ export default function Dashboard() {
           }
         }}
       />
+
+      <TeamCoverage party={player.party} />
 
       <GraveyardSection
         entries={player.graveyard}
