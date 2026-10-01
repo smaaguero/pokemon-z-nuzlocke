@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { POKEMON_TYPES, typeChipClass } from "../../data/pokemon-types";
 import { dexIdFromName } from "../../data/pokedex";
+import { typesFromDex } from "../../data/pokemon-type-by-dex";
 import { spriteUrlFromDex } from "../../lib/sprites";
 import type { PokemonEntry } from "../../types/nuzlocke";
 import type { NewPokemonInput } from "../../hooks/useNuzlockeState";
@@ -10,6 +11,14 @@ import type { NewPokemonInput } from "../../hooks/useNuzlockeState";
 const autoDex = (species: string): string => {
   const dex = dexIdFromName(species);
   return dex != null ? String(dex) : "";
+};
+
+// Best-effort type lookup from whatever is currently in the Dex # field.
+// Only a convenience default — randomizers can scramble types too, so the
+// caller always lets the player override it afterwards.
+const autoTypes = (dexValue: string): string[] | null => {
+  const n = Number(dexValue);
+  return Number.isInteger(n) && n > 0 ? typesFromDex(n) : null;
 };
 
 interface Props {
@@ -46,10 +55,13 @@ export default function EncounterDrawer({
   const [form, setForm] = useState(EMPTY);
   // Once the user edits the Dex # by hand we stop deriving it from the species.
   const [dexTouched, setDexTouched] = useState(false);
+  // Once the user picks/unpicks a type chip we stop overwriting their choice.
+  const [typesTouched, setTypesTouched] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setDexTouched(false);
+    setTypesTouched(false);
     if (initial) {
       const numericId = /^\d+$/.test(initial.id.replace(/#\d+$/, ""))
         ? initial.id.replace(/#\d+$/, "")
@@ -82,12 +94,14 @@ export default function EncounterDrawer({
 
   const canSubmit = form.species.trim().length > 0 && (mode === "edit" || !partyFull);
 
-  const toggleType = (t: string) =>
+  const toggleType = (t: string) => {
+    setTypesTouched(true);
     setForm((f) => {
       if (f.types.includes(t)) return { ...f, types: f.types.filter((x) => x !== t) };
       if (f.types.length >= 2) return f;
       return { ...f, types: [...f.types, t] };
     });
+  };
 
   const submit = () => {
     if (!canSubmit) return;
@@ -135,10 +149,13 @@ export default function EncounterDrawer({
                   value={form.species}
                   onChange={(e) => {
                     const species = e.target.value;
+                    const resolvedId = dexTouched ? form.id : autoDex(species);
+                    const looked = typesTouched ? null : autoTypes(resolvedId);
                     setForm((f) => ({
                       ...f,
                       species,
-                      id: dexTouched ? f.id : autoDex(species),
+                      id: resolvedId,
+                      types: looked ?? f.types,
                     }));
                   }}
                   placeholder="e.g. Cubone"
@@ -183,14 +200,16 @@ export default function EncounterDrawer({
               inputMode="numeric"
               onChange={(e) => {
                 setDexTouched(true);
-                setForm((f) => ({ ...f, id: e.target.value }));
+                const value = e.target.value;
+                const looked = typesTouched ? null : autoTypes(value);
+                setForm((f) => ({ ...f, id: value, types: looked ?? f.types }));
               }}
               placeholder="e.g. 104"
               className={inputCls}
             />
           </Field>
 
-          <Field label={`Types (${form.types.length}/2)`}>
+          <Field label={`Types (${form.types.length}/2)`} hint={!typesTouched && form.types.length > 0 ? "auto-filled — tap to override" : undefined}>
             <div className="flex flex-wrap gap-1.5">
               {POKEMON_TYPES.map((t) => {
                 const active = form.types.includes(t);
