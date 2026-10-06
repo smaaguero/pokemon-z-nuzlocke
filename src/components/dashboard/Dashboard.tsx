@@ -6,6 +6,7 @@ import type { PokemonEntry } from "../../types/nuzlocke";
 import PlayerCard from "./PlayerCard";
 import TeamCoverage from "./TeamCoverage";
 import BoxSection from "./BoxSection";
+import OffensiveCoverage from "./OffensiveCoverage";
 import GraveyardSection from "./GraveyardSection";
 import EncounterDrawer from "./EncounterDrawer";
 import FallenDialog from "./FallenDialog";
@@ -209,6 +210,8 @@ export default function Dashboard() {
       />
 
       <TeamCoverage party={player.party} />
+
+      <OffensiveCoverage party={player.party} />
 
       <BoxSection
         box={player.box ?? []}
