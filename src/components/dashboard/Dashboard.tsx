@@ -16,9 +16,14 @@ type Toast = { kind: "success" | "error"; msg: string };
 
 export default function Dashboard() {
   const state = useNuzlockeState();
-  const [drawer, setDrawer] = useState<{ open: boolean; entry: PokemonEntry | null }>({
+  const [drawer, setDrawer] = useState<{
+    open: boolean;
+    entry: PokemonEntry | null;
+    to: "party" | "box";
+  }>({
     open: false,
     entry: null,
+    to: "party",
   });
   const [fallen, setFallen] = useState<PokemonEntry | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -72,9 +77,10 @@ export default function Dashboard() {
 
   const partyFull = player.party.length >= state.maxParty;
 
-  const openAdd = () => setDrawer({ open: true, entry: null });
-  const openEdit = (entry: PokemonEntry) => setDrawer({ open: true, entry });
-  const closeDrawer = () => setDrawer({ open: false, entry: null });
+  // Explicit arguments: these are also passed straight to onClick handlers.
+  const openAdd = (to: "party" | "box" = "party") => setDrawer({ open: true, entry: null, to });
+  const openEdit = (entry: PokemonEntry) => setDrawer({ open: true, entry, to: "party" });
+  const closeDrawer = () => setDrawer({ open: false, entry: null, to: "party" });
 
   const handleSubmit = (input: NewPokemonInput, to: "party" | "box") => {
     if (drawer.entry) {
@@ -173,7 +179,7 @@ export default function Dashboard() {
             Export Save
           </button>
           <button
-            onClick={openAdd}
+            onClick={() => openAdd("party")}
             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-emerald-400"
           >
             <Plus className="size-4" />
@@ -198,7 +204,7 @@ export default function Dashboard() {
         player={player}
         maxParty={state.maxParty}
         onRename={(name) => state.renamePlayer(player.playerId, name)}
-        onAddEncounter={openAdd}
+        onAddEncounter={() => openAdd("party")}
         onMarkFallen={(entry) => setFallen(entry)}
         onEdit={openEdit}
         onRelease={(entry) => {
@@ -216,6 +222,7 @@ export default function Dashboard() {
       <BoxSection
         box={player.box ?? []}
         partyFull={partyFull}
+        onAdd={() => openAdd("box")}
         onToParty={(entry) => state.moveToParty(player.playerId, entry.id)}
         onEdit={openEdit}
         onRelease={(entry) => {
@@ -234,6 +241,7 @@ export default function Dashboard() {
 
       <EncounterDrawer
         open={drawer.open}
+        target={drawer.to}
         mode={drawer.entry ? "edit" : "add"}
         initial={drawer.entry}
         partyFull={partyFull}

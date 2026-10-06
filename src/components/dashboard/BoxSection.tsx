@@ -1,4 +1,4 @@
-import { Archive, Pencil, Trash2, Undo2 } from "lucide-react";
+import { Archive, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import type { PokemonEntry } from "../../types/nuzlocke";
 import { typeChipClass } from "../../data/pokemon-types";
 import { SpriteImg } from "./SpriteImg";
@@ -9,9 +9,10 @@ interface Props {
   onToParty: (entry: PokemonEntry) => void;
   onEdit: (entry: PokemonEntry) => void;
   onRelease: (entry: PokemonEntry) => void;
+  onAdd: () => void;
 }
 
-export default function BoxSection({ box, partyFull, onToParty, onEdit, onRelease }: Props) {
+export default function BoxSection({ box, partyFull, onToParty, onEdit, onRelease, onAdd }: Props) {
   return (
     <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4 sm:p-6">
       <header className="flex items-center justify-between gap-3">
@@ -19,16 +20,24 @@ export default function BoxSection({ box, partyFull, onToParty, onEdit, onReleas
           <Archive className="size-5 text-zinc-400" />
           <h2 className="text-lg font-semibold text-zinc-100">PC</h2>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold tabular-nums text-zinc-100">{box.length}</span>
-          <span className="text-xs uppercase tracking-wide text-zinc-500">stored</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold tabular-nums text-zinc-100">{box.length}</span>
+            <span className="text-xs uppercase tracking-wide text-zinc-500">stored</span>
+          </div>
+          <button
+            onClick={onAdd}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700"
+          >
+            <Plus className="size-3.5" />
+            Add to PC
+          </button>
         </div>
       </header>
 
       {box.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-500">
-          Nothing in the PC. Send Pokémon here from a party card, or register a new encounter
-          straight to the PC when your party is full.
+          Nothing in the PC yet. Add a Pokémon here directly, or send one from a party card.
         </p>
       ) : (
         <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

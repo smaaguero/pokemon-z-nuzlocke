@@ -23,6 +23,8 @@ const autoTypes = (dexValue: string): string[] | null => {
 
 interface Props {
   open: boolean;
+  // Where a new Pokémon goes by default (the button you came from).
+  target: "party" | "box";
   mode: "add" | "edit";
   initial: PokemonEntry | null;
   partyFull: boolean;
@@ -46,6 +48,7 @@ const inputCls =
 
 export default function EncounterDrawer({
   open,
+  target,
   mode,
   initial,
   partyFull,
@@ -138,7 +141,7 @@ export default function EncounterDrawer({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submit("party");
+            submit(mode === "add" ? target : "party");
           }}
           className="flex flex-1 flex-col gap-4 px-5 py-5"
         >
@@ -286,23 +289,42 @@ export default function EncounterDrawer({
             >
               Cancel
             </button>
-            {mode === "add" && (
+            {mode === "edit" ? (
               <button
-                type="button"
-                onClick={() => submit("box")}
+                type="submit"
                 disabled={!hasSpecies}
-                className="flex-1 rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Send to PC
+                Save changes
               </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => submit("party")}
+                  disabled={!canAddToParty}
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${
+                    target === "party"
+                      ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                      : "border border-white/10 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                  }`}
+                >
+                  Add to party
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submit("box")}
+                  disabled={!hasSpecies}
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${
+                    target === "box"
+                      ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                      : "border border-white/10 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                  }`}
+                >
+                  Add to PC
+                </button>
+              </>
             )}
-            <button
-              type="submit"
-              disabled={mode === "edit" ? !hasSpecies : !canAddToParty}
-              className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {mode === "edit" ? "Save changes" : "Add to party"}
-            </button>
           </div>
         </form>
       </div>
