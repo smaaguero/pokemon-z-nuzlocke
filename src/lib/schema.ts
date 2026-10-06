@@ -65,6 +65,9 @@ export function parsePlayerRun(v: unknown, path: string): PlayerRun {
   if (!isRecord(v)) throw new Error(`${path} must be an object`);
   if (!Array.isArray(v.party)) throw new Error(`${path}.party must be an array`);
   if (!Array.isArray(v.graveyard)) throw new Error(`${path}.graveyard must be an array`);
+  if (v.box !== undefined && v.box !== null && !Array.isArray(v.box)) {
+    throw new Error(`${path}.box must be an array`);
+  }
 
   const now = new Date().toISOString();
   return {
@@ -73,6 +76,9 @@ export function parsePlayerRun(v: unknown, path: string): PlayerRun {
     avatarUrl: optStr(v.avatarUrl, `${path}.avatarUrl`),
     party: v.party.map((e, i) => parsePokemonEntry(e, `${path}.party[${i}]`)),
     graveyard: v.graveyard.map((e, i) => parsePokemonEntry(e, `${path}.graveyard[${i}]`)),
+    box: Array.isArray(v.box)
+      ? v.box.map((e, i) => parsePokemonEntry(e, `${path}.box[${i}]`))
+      : [],
     createdAt: typeof v.createdAt === "string" ? v.createdAt : now,
     updatedAt: typeof v.updatedAt === "string" ? v.updatedAt : now,
   };

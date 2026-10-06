@@ -123,6 +123,14 @@ function resolveEntryId(explicitId: string, species: string): string {
   return fromName != null ? String(fromName) : uid();
 }
 
+// Every entry id a player already uses across party, PC and graveyard.
+// Optionally ignores one entry (used when re-keying that entry itself).
+function allIds(p: PlayerRun, ignoreId?: string): string[] {
+  return [...p.party, ...(p.box ?? []), ...p.graveyard]
+    .map((e) => e.id)
+    .filter((id) => id !== ignoreId);
+}
+
 function makePlayer(name: string): PlayerRun {
   const ts = nowIso();
   return {
@@ -130,6 +138,7 @@ function makePlayer(name: string): PlayerRun {
     playerName: name,
     party: [],
     graveyard: [],
+    box: [],
     createdAt: ts,
     updatedAt: ts,
   };
@@ -162,6 +171,14 @@ function lsDel(key: string): void {
   }
 }
 
+// Older saves predate the PC; always hand the store players with a box array.
+function normalizePlayers(players: PlayerRun[]): PlayerRun[] {
+  // Keep the same array reference when nothing needs changing: the save logic
+  // compares references to decide whether the roster is dirty.
+  if (players.every((p) => Array.isArray(p.box))) return players;
+  return players.map((p) => (Array.isArray(p.box) ? p : { ...p, box: [] }));
+}
+
 function loadLocalRun(): NuzlockeStore | null {
   const raw = lsGet(LOCAL_KEY);
   if (!raw) return null;
@@ -171,7 +188,7 @@ function loadLocalRun(): NuzlockeStore | null {
     const activePlayerId = parsed.players.some((p) => p.playerId === parsed.activePlayerId)
       ? parsed.activePlayerId
       : parsed.players[0].playerId;
-    return { players: parsed.players, activePlayerId };
+    return { players: normalizePlayers(parsed.players), activePlayerId };
   } catch {
     return null;
   }
@@ -203,7 +220,10 @@ function summaryOf(t: Tournament): TournamentSummary {
     id: t.id,
     name: t.name,
     playerCount: t.players.length,
-    pokemonCount: t.players.reduce((n, p) => n + p.party.length + p.graveyard.length, 0),
+    pokemonCount: t.players.reduce(
+      (n, p) => n + p.party.length + (p.box?.length ?? 0) + p.graveyard.length,
+      0,
+    ),
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
   };
@@ -264,7 +284,7 @@ export function useNuzlockeState() {
   const applyLoaded = useCallback(
     (players: PlayerRun[], activePlayerId: string, nextScope: Scope) => {
       skipNextSaveRef.current = true;
-      const next = { players, activePlayerId };
+      const next = { players: normalizePlayers(players), activePlayerId };
       storeRef.current = next;
       setStoreState(next);
       scopeRef.current = nextScope;
@@ -550,10 +570,10 @@ export function useNuzlockeState() {
   );
 
   const addPokemon = useCallback(
-    (playerId: string, input: NewPokemonInput) => {
+    (playerId: string, input: NewPokemonInput, to: "party" | "box" = "party") => {
       mutatePlayer(playerId, (p) => {
-        if (p.party.length >= MAX_PARTY) return p;
-        const used = new Set([...p.party, ...p.graveyard].map((e) => e.id));
+        if (to === "party" && p.party.length >= MAX_PARTY) return p;
+        const used = new Set(allIds(p));
         const species = input.species.trim();
         const id = uniqueId(resolveEntryId(input.id, species), used);
         const entry: PokemonEntry = {
@@ -567,7 +587,9 @@ export function useNuzlockeState() {
           moves: input.moves.map((m) => m.trim()).filter(Boolean).slice(0, 4),
           status: "alive",
         };
-        return { ...p, party: [...p.party, entry] };
+        return to === "box"
+          ? { ...p, box: [...(p.box ?? []), entry] }
+          : { ...p, party: [...p.party, entry] };
       });
     },
     [mutatePlayer],
@@ -576,9 +598,7 @@ export function useNuzlockeState() {
   const updatePokemon = useCallback(
     (playerId: string, entryId: string, patch: PokemonPatch) => {
       mutatePlayer(playerId, (p) => {
-        const otherIds = new Set(
-          [...p.party, ...p.graveyard].filter((e) => e.id !== entryId).map((e) => e.id),
-        );
+        const otherIds = new Set(allIds(p, entryId));
         const apply = (list: PokemonEntry[]) =>
           list.map((e) => {
             if (e.id !== entryId) return e;
@@ -612,7 +632,12 @@ export function useNuzlockeState() {
                 : e.moves,
             };
           });
-        return { ...p, party: apply(p.party), graveyard: apply(p.graveyard) };
+        return {
+          ...p,
+          party: apply(p.party),
+          graveyard: apply(p.graveyard),
+          box: apply(p.box ?? []),
+        };
       });
     },
     [mutatePlayer],
@@ -645,19 +670,17 @@ export function useNuzlockeState() {
 
   const revivePokemon = useCallback(
     (playerId: string, entryId: string): boolean => {
-      let ok = false;
-      mutatePlayer(playerId, (p) => {
-        const entry = p.graveyard.find((e) => e.id === entryId);
-        if (!entry || p.party.length >= MAX_PARTY) return p;
-        ok = true;
-        const revived: PokemonEntry = { ...entry, status: "alive", deathDetails: undefined };
-        return {
-          ...p,
-          graveyard: p.graveyard.filter((e) => e.id !== entryId),
-          party: [...p.party, revived],
-        };
-      });
-      return ok;
+      // Same synchronous check as moveToParty (see note there).
+      const p = storeRef.current.players.find((x) => x.playerId === playerId);
+      const entry = p?.graveyard.find((e) => e.id === entryId);
+      if (!p || !entry || p.party.length >= MAX_PARTY) return false;
+      const revived: PokemonEntry = { ...entry, status: "alive", deathDetails: undefined };
+      mutatePlayer(playerId, (cur) => ({
+        ...cur,
+        graveyard: cur.graveyard.filter((e) => e.id !== entryId),
+        party: [...cur.party, revived],
+      }));
+      return true;
     },
     [mutatePlayer],
   );
@@ -668,7 +691,41 @@ export function useNuzlockeState() {
         ...p,
         party: p.party.filter((e) => e.id !== entryId),
         graveyard: p.graveyard.filter((e) => e.id !== entryId),
+        box: (p.box ?? []).filter((e) => e.id !== entryId),
       }));
+    },
+    [mutatePlayer],
+  );
+
+  // PC <-> party. Moving into a full party is refused (returns false).
+  const moveToBox = useCallback(
+    (playerId: string, entryId: string) => {
+      mutatePlayer(playerId, (p) => {
+        const entry = p.party.find((e) => e.id === entryId);
+        if (!entry) return p;
+        return {
+          ...p,
+          party: p.party.filter((e) => e.id !== entryId),
+          box: [entry, ...(p.box ?? [])],
+        };
+      });
+    },
+    [mutatePlayer],
+  );
+
+  const moveToParty = useCallback(
+    (playerId: string, entryId: string): boolean => {
+      // Decide synchronously from the latest state: the setState updater runs
+      // later, so it cannot be used to report success.
+      const p = storeRef.current.players.find((x) => x.playerId === playerId);
+      const entry = p?.box?.find((e) => e.id === entryId);
+      if (!p || !entry || p.party.length >= MAX_PARTY) return false;
+      mutatePlayer(playerId, (cur) => ({
+        ...cur,
+        box: (cur.box ?? []).filter((e) => e.id !== entryId),
+        party: [...cur.party, entry],
+      }));
+      return true;
     },
     [mutatePlayer],
   );
@@ -745,7 +802,10 @@ export function useNuzlockeState() {
       if (pref && pref !== "local") {
         const cache = readCache(pref);
         if (cache) {
-          storeRef.current = { players: cache.players, activePlayerId: cache.activePlayerId };
+          storeRef.current = {
+            players: normalizePlayers(cache.players),
+            activePlayerId: cache.activePlayerId,
+          };
           setStoreState(storeRef.current);
           scopeRef.current = { kind: "tournament", id: pref, name: cache.name };
           setScopeState(scopeRef.current);
@@ -792,6 +852,8 @@ export function useNuzlockeState() {
     moveToGraveyard,
     revivePokemon,
     removePokemon,
+    moveToBox,
+    moveToParty,
     exportBackup,
     importBackup,
     // tournaments / server sync

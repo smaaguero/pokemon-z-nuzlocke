@@ -27,7 +27,7 @@ interface Props {
   initial: PokemonEntry | null;
   partyFull: boolean;
   onClose: () => void;
-  onSubmit: (input: NewPokemonInput) => void;
+  onSubmit: (input: NewPokemonInput, to: "party" | "box") => void;
 }
 
 const EMPTY = {
@@ -92,7 +92,8 @@ export default function EncounterDrawer({
 
   if (!open) return null;
 
-  const canSubmit = form.species.trim().length > 0 && (mode === "edit" || !partyFull);
+  const hasSpecies = form.species.trim().length > 0;
+  const canAddToParty = hasSpecies && !partyFull;
 
   const toggleType = (t: string) => {
     setTypesTouched(true);
@@ -103,8 +104,8 @@ export default function EncounterDrawer({
     });
   };
 
-  const submit = () => {
-    if (!canSubmit) return;
+  const submit = (to: "party" | "box" = "party") => {
+    if (!hasSpecies || (to === "party" && mode === "add" && partyFull)) return;
     onSubmit({
       id: form.id.trim(),
       nickname: form.nickname,
@@ -114,7 +115,7 @@ export default function EncounterDrawer({
       ability: form.ability,
       item: form.item,
       moves: form.moves,
-    });
+    }, to);
   };
 
   return (
@@ -137,7 +138,7 @@ export default function EncounterDrawer({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submit();
+            submit("party");
           }}
           className="flex flex-1 flex-col gap-4 px-5 py-5"
         >
@@ -273,7 +274,7 @@ export default function EncounterDrawer({
 
           {mode === "add" && partyFull && (
             <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-300">
-              Party is full (6/6). Move a Pokémon to the graveyard first.
+              Party is full (6/6). Send this one to the PC, or move someone out first.
             </p>
           )}
 
@@ -285,9 +286,19 @@ export default function EncounterDrawer({
             >
               Cancel
             </button>
+            {mode === "add" && (
+              <button
+                type="button"
+                onClick={() => submit("box")}
+                disabled={!hasSpecies}
+                className="flex-1 rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Send to PC
+              </button>
+            )}
             <button
               type="submit"
-              disabled={!canSubmit}
+              disabled={mode === "edit" ? !hasSpecies : !canAddToParty}
               className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {mode === "edit" ? "Save changes" : "Add to party"}

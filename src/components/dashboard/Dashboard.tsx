@@ -5,6 +5,7 @@ import type { NewPokemonInput, PokemonPatch } from "../../hooks/useNuzlockeState
 import type { PokemonEntry } from "../../types/nuzlocke";
 import PlayerCard from "./PlayerCard";
 import TeamCoverage from "./TeamCoverage";
+import BoxSection from "./BoxSection";
 import GraveyardSection from "./GraveyardSection";
 import EncounterDrawer from "./EncounterDrawer";
 import FallenDialog from "./FallenDialog";
@@ -74,7 +75,7 @@ export default function Dashboard() {
   const openEdit = (entry: PokemonEntry) => setDrawer({ open: true, entry });
   const closeDrawer = () => setDrawer({ open: false, entry: null });
 
-  const handleSubmit = (input: NewPokemonInput) => {
+  const handleSubmit = (input: NewPokemonInput, to: "party" | "box") => {
     if (drawer.entry) {
       const patch: PokemonPatch = {
         id: input.id,
@@ -88,7 +89,7 @@ export default function Dashboard() {
       };
       state.updatePokemon(player.playerId, drawer.entry.id, patch);
     } else {
-      state.addPokemon(player.playerId, input);
+      state.addPokemon(player.playerId, input, to);
     }
     closeDrawer();
   };
@@ -204,9 +205,22 @@ export default function Dashboard() {
             state.removePokemon(player.playerId, entry.id);
           }
         }}
+        onSendToBox={(entry) => state.moveToBox(player.playerId, entry.id)}
       />
 
       <TeamCoverage party={player.party} />
+
+      <BoxSection
+        box={player.box ?? []}
+        partyFull={partyFull}
+        onToParty={(entry) => state.moveToParty(player.playerId, entry.id)}
+        onEdit={openEdit}
+        onRelease={(entry) => {
+          if (window.confirm(`Release ${entry.nickname || entry.species} from the PC?`)) {
+            state.removePokemon(player.playerId, entry.id);
+          }
+        }}
+      />
 
       <GraveyardSection
         entries={player.graveyard}

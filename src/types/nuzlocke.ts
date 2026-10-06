@@ -1,4 +1,4 @@
-// Data schemas — Section 5.1 of the SDD. Kept verbatim; do not add fields here.
+// Data schemas — Section 5.1 of the SDD.
 
 export interface PlayerRun {
   playerId: string;
@@ -6,6 +6,9 @@ export interface PlayerRun {
   avatarUrl?: string;
   party: PokemonEntry[];
   graveyard: PokemonEntry[];
+  // App-level extension (not in SDD 5.1): the PC. Optional so older saves and
+  // backups stay valid; the store always normalises it to an array.
+  box?: PokemonEntry[];
   createdAt: string;
   updatedAt: string;
 }

@@ -1,4 +1,4 @@
-import { ChevronDown, Pencil, Skull, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, Pencil, Skull, Trash2 } from "lucide-react";
 import type { PokemonEntry } from "../../types/nuzlocke";
 import { typeChipClass } from "../../data/pokemon-types";
 import { SpriteImg } from "./SpriteImg";
@@ -8,9 +8,10 @@ interface Props {
   onMarkFallen: () => void;
   onEdit: () => void;
   onRelease: () => void;
+  onSendToBox: () => void;
 }
 
-export default function PokemonSlot({ entry, onMarkFallen, onEdit, onRelease }: Props) {
+export default function PokemonSlot({ entry, onMarkFallen, onEdit, onRelease, onSendToBox }: Props) {
   const hasDetails = Boolean(entry.ability || entry.item || entry.moves.length);
 
   return (
@@ -91,6 +92,13 @@ export default function PokemonSlot({ entry, onMarkFallen, onEdit, onRelease }: 
         >
           <Pencil className="size-3" />
           Edit
+        </button>
+        <button
+          onClick={onSendToBox}
+          className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-zinc-800 px-2 py-1 text-[11px] text-zinc-300 transition-colors hover:bg-zinc-700"
+        >
+          <Archive className="size-3" />
+          To PC
         </button>
         <button
           onClick={onRelease}

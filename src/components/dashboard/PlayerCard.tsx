@@ -11,6 +11,7 @@ interface Props {
   onMarkFallen: (entry: PokemonEntry) => void;
   onEdit: (entry: PokemonEntry) => void;
   onRelease: (entry: PokemonEntry) => void;
+  onSendToBox: (entry: PokemonEntry) => void;
 }
 
 export default function PlayerCard({
@@ -21,11 +22,12 @@ export default function PlayerCard({
   onMarkFallen,
   onEdit,
   onRelease,
+  onSendToBox,
 }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(player.playerName);
 
-  const caught = player.party.length + player.graveyard.length;
+  const caught = player.party.length + (player.box?.length ?? 0) + player.graveyard.length;
   const deaths = player.graveyard.length;
 
   const milestones = [
@@ -127,6 +129,7 @@ export default function PlayerCard({
               onMarkFallen={() => onMarkFallen(entry)}
               onEdit={() => onEdit(entry)}
               onRelease={() => onRelease(entry)}
+              onSendToBox={() => onSendToBox(entry)}
             />
           ) : (
             <button

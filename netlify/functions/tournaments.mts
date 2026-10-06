@@ -57,7 +57,10 @@ function summarize(t: Tournament): TournamentSummary {
     id: t.id,
     name: t.name,
     playerCount: t.players.length,
-    pokemonCount: t.players.reduce((n, p) => n + p.party.length + p.graveyard.length, 0),
+    pokemonCount: t.players.reduce(
+      (n, p) => n + p.party.length + (p.box?.length ?? 0) + p.graveyard.length,
+      0,
+    ),
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
   };

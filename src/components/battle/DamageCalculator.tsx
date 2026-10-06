@@ -21,7 +21,9 @@ function findRosterEntry(
   const entryId = value.slice(sep + 1);
   const player = players.find((p) => p.playerId === playerId);
   if (!player) return null;
-  const entry = [...player.party, ...player.graveyard].find((e) => e.id === entryId);
+  const entry = [...player.party, ...(player.box ?? []), ...player.graveyard].find(
+    (e) => e.id === entryId,
+  );
   return entry ? { entry, playerName: player.playerName } : null;
 }
 
@@ -36,18 +38,23 @@ function RosterPicker({
   onChange: (value: string) => void;
   fills: string;
 }) {
-  const hasAny = players.some((p) => p.party.length > 0 || p.graveyard.length > 0);
+  const hasAny = players.some((p) => p.party.length + (p.box?.length ?? 0) + p.graveyard.length > 0);
   return (
     <Field label="Load from roster" hint="optional">
       <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
         <option value="">— Manual stats —</option>
         {hasAny ? (
           players.map((p) =>
-            p.party.length === 0 && p.graveyard.length === 0 ? null : (
+            p.party.length + (p.box?.length ?? 0) + p.graveyard.length === 0 ? null : (
               <optgroup key={p.playerId} label={p.playerName}>
                 {p.party.map((entry) => (
                   <option key={`party:${entry.id}`} value={`${p.playerId}:${entry.id}`}>
                     {entry.nickname || entry.species} ({entry.species}) · Lv. {entry.level}
+                  </option>
+                ))}
+                {(p.box ?? []).map((entry) => (
+                  <option key={`pc:${entry.id}`} value={`${p.playerId}:${entry.id}`}>
+                    📦 {entry.nickname || entry.species} ({entry.species}) · Lv. {entry.level} (PC)
                   </option>
                 ))}
                 {p.graveyard.map((entry) => (
