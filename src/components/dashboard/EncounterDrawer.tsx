@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { POKEMON_TYPES, typeChipClass } from "../../data/pokemon-types";
 import { dexIdFromName } from "../../data/pokedex";
 import { typesFromDex } from "../../data/pokemon-type-by-dex";
+import { MOVE_NAMES } from "../../data/move-names";
+import { ABILITY_NAMES } from "../../data/ability-names";
 import { spriteUrlFromDex } from "../../lib/sprites";
 import type { PokemonEntry } from "../../types/nuzlocke";
 import type { NewPokemonInput } from "../../hooks/useNuzlockeState";
@@ -236,9 +238,13 @@ export default function EncounterDrawer({
             </div>
           </Field>
 
+          <BilingualOptions id="ability-options" names={ABILITY_NAMES} />
+          <BilingualOptions id="move-options" names={MOVE_NAMES} />
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ability">
               <input
+                list="ability-options"
                 value={form.ability}
                 onChange={(e) => setForm((f) => ({ ...f, ability: e.target.value }))}
                 className={inputCls}
@@ -255,11 +261,12 @@ export default function EncounterDrawer({
             </Field>
           </div>
 
-          <Field label="Moves">
+          <Field label="Moves" hint="English or Spanish">
             <div className="grid grid-cols-2 gap-2">
               {form.moves.map((mv, i) => (
                 <input
                   key={i}
+                  list="move-options"
                   value={mv}
                   onChange={(e) =>
                     setForm((f) => {
@@ -331,6 +338,30 @@ export default function EncounterDrawer({
     </div>
   );
 }
+
+// Autocomplete for free-text fields: every name is offered in both languages,
+// with the other language shown as the option label. Memoised because the
+// lists are long and never change while the drawer re-renders on each keystroke.
+const BilingualOptions = memo(function BilingualOptions({
+  id,
+  names,
+}: {
+  id: string;
+  names: ReadonlyArray<readonly [string, string]>;
+}) {
+  return (
+    <datalist id={id}>
+      {names.flatMap(([en, es]) =>
+        en === es
+          ? [<option key={`en:${en}`} value={en} />]
+          : [
+              <option key={`en:${en}`} value={en}>{es}</option>,
+              <option key={`es:${es}`} value={es}>{en}</option>,
+            ],
+      )}
+    </datalist>
+  );
+});
 
 function SpritePreview({ dex }: { dex: string }) {
   const [broken, setBroken] = useState(false);

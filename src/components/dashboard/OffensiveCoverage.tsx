@@ -1,13 +1,11 @@
 import { POKEMON_TYPES, typeChipClass, type PokemonType } from "../../data/pokemon-types";
 import { TYPE_CHART } from "../../data/typeChart";
-import { DAMAGING_MOVE_TYPES, STATUS_MOVE_KEYS, moveKey } from "../../data/move-types";
+import { moveDamageType } from "../../lib/moves";
 import type { PokemonEntry } from "../../types/nuzlocke";
 
 interface Props {
   party: PokemonEntry[];
 }
-
-const hasOwn = (obj: object, key: string) => Object.prototype.hasOwnProperty.call(obj, key);
 
 function Chip({ type, dim = false }: { type: PokemonType; dim?: boolean }) {
   return (
@@ -33,9 +31,9 @@ export default function OffensiveCoverage({ party }: Props) {
       const name = raw.trim();
       if (!name) continue;
       registered++;
-      const key = moveKey(name);
-      if (hasOwn(DAMAGING_MOVE_TYPES, key)) moveTypes.add(DAMAGING_MOVE_TYPES[key]);
-      else if (!STATUS_MOVE_KEYS.has(key)) unknown.push(name);
+      const type = moveDamageType(name);
+      if (type === null) unknown.push(name);
+      else if (type !== "status") moveTypes.add(type);
     }
   }
 
@@ -48,7 +46,7 @@ export default function OffensiveCoverage({ party }: Props) {
       <h2 className="text-sm font-semibold text-zinc-100">Team offensive coverage</h2>
       <p className="mt-1 text-xs text-zinc-500">
         Defending types your team can hit for super-effective damage (2× or more), based on the
-        damaging moves registered on your living Pokémon.
+        damaging moves registered on your living Pokémon. Move names can be in English or Spanish.
       </p>
 
       {registered === 0 ? (
@@ -94,7 +92,7 @@ export default function OffensiveCoverage({ party }: Props) {
           {unknown.length > 0 && (
             <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
               Not recognised, so not counted: {unknown.join(", ")}. Check the spelling (e.g.
-              "Thunder Shock").
+              "Thunder Shock" or "Impactrueno").
             </p>
           )}
         </>
